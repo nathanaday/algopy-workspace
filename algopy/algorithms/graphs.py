@@ -42,37 +42,45 @@ def dijkstra(graph: nx.Graph, start: Any) -> Generator[DijkstraSnapshot, None, N
     
     # Let set S be the explored nodes
     # Let set V_S be the unexplored nodes
-    S = [start]
-    V_S = [node for node in list(graph.nodes) if node != start]
-    
+    S = set([start])
+    V_S = set(node for node in graph.nodes if node != start)
+
     graph_edges = [(u, v, d['weight']) for (u, v, d) in graph.edges(data=True)]
-    yield (list(S), list(V_S), graph_edges, copy.deepcopy(A))
-    
+    yield (sorted(S), sorted(V_S), graph_edges, copy.deepcopy(A))
+
+    # Seed the heap with edges from the start node
+    for neighbor in graph.neighbors(start):
+        w = graph[start][neighbor]['weight']
+        pq.insert(item=(start, neighbor), value=A[start]['cost'] + w)
+
     while len(V_S) > 0:
-        
-        H = "---- Dijkstra Iteration ---"
-        
-        crossing_edges = [(u, v, d['weight']) for (u, v, d) in graph.edges(data=True) if (u in S) != (v in S)]
-        
-        # Add crossing edges to the priority queue
-        for edge in crossing_edges:
-            u, v, w = edge  # Unpack
-            pq.insert(item=(u,v), value=w)
-            
-        # Pick the lowest cost edge
+
+        # Pop the lowest cost edge, skipping stale entries
         el = pq.pop()
         u, v = el.get("item")
         w = el.get("value")
-                
+
+        # Orient the edge so new_node is the unexplored end
+        if u in S and v in S:
+            continue  # Both already explored, stale entry
+        new_node = v if v not in S else u
+        parent = u if new_node == v else v
+
         # Update cost list A
-        A[v]['parent'] = u
-        A[v]['cost'] = round(A[u]['cost'] + w, 3)
-        
-        # Move the low cost edge from V_S --> S
-        V_S = [node for node in V_S if node != v]
-        S.append(v)
-        
-        yield (list(S), list(V_S), graph_edges, copy.deepcopy(A))
+        A[new_node]['parent'] = parent
+        A[new_node]['cost'] = round(w, 3)
+
+        # Move new_node from V_S to S
+        V_S.discard(new_node)
+        S.add(new_node)
+
+        # Add edges from the newly explored node to the heap
+        for neighbor in graph.neighbors(new_node):
+            if neighbor not in S:
+                edge_w = graph[new_node][neighbor]['weight']
+                pq.insert(item=(new_node, neighbor), value=A[new_node]['cost'] + edge_w)
+
+        yield (sorted(S), sorted(V_S), graph_edges, copy.deepcopy(A))
     
 
 if __name__ == '__main__':
