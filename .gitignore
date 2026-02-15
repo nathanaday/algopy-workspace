@@ -1,0 +1,41 @@
+# Byte-code files
+__pycache__/
+*.py[cod]
+
+# Virtual environment
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.claude
+
+# Distribution / build files
+dist/
+build/
+*.egg-info/
+*.whl
+*.tar.gz
+
+# IDE-specific files and directories
+.idea/  # For PyCharm
+.vscode/ # For VS Code
+*.swp
+*.sublime-workspace
+
+# Operating System files
+.DS_Store # macOS
+.gitignore.stackdump # Windows/Git Bash
+
+# Editor backup files
+*~
+.#*
+
+# Miscellaneous
+# Example: sensitive data or specific log files
+.env # Environment variables
+.flaskenv
+logs/
+*.log
+tmp/
