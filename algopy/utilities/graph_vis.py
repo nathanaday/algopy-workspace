@@ -3,10 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from collections import deque
 
-# Type aliases used across notebooks and algorithms.
-Edge = tuple[int, int]
-Snapshot = tuple[set[int], list[Edge]]
-
+from .alias_types import Edge, Snapshot
 
 class GraphVis:
     """Reusable graph-drawing helper for algorithm walkthrough notebooks."""
