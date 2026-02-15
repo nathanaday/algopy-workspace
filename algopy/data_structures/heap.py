@@ -190,6 +190,14 @@ class MinHeap(Heap):
         self.elements.append({"item": item, "value": value})
         self._heapify_up(len(self.elements) -1)
 
+    def decrease_priority(self, item, new_val):
+        """Find element by item and decrease its priority value."""
+        for i, el in enumerate(self.elements):
+            if el["item"] == item:
+                if new_val < el["value"]:
+                    self.change_key(i, new_val)
+                return
+
     def _heapify_up(self, index: int):
         """ Swap keys upwards until heap property is set """
 

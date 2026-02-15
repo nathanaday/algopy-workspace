@@ -1,5 +1,4 @@
 from typing import Generator, Any
-import copy
 import json
 
 import networkx as nx
@@ -21,66 +20,56 @@ def dijkstra(graph: nx.Graph, start: Any) -> Generator[DijkstraSnapshot, None, N
     """
     
     # Precondition checks
-    if start not in list(graph.nodes):
+    if start not in graph.nodes:
         print(f"Cannot use dijkstra: start node {start} is not a node in the input graph")
         return None
-    
-    # Dictionary for node, cost, and path tracking
-    new_item = {"node": None, "cost": float('inf'), "parent": None}
-    A = {}  # key=node, value=new_item
-    
-    # Process original dictionary
-    for node in graph.nodes:
-        item = copy.deepcopy(new_item)
-        item["node"] = node
-        A[node] = item
-    
-    A[start]['cost'] = 0
 
-    # Min heap to process incoming edges
-    pq = MinHeap()  # takes (item: tuple(u, v), value: w int)
-    
-    # Let set S be the explored nodes
-    # Let set V_S be the unexplored nodes
-    S = set([start])
-    V_S = set(node for node in graph.nodes if node != start)
+    dist = {}
+    prev = {}
+    Q = MinHeap()
+
+    # Initialization
+    dist[start] = 0
+    prev[start] = None
+    Q.insert(start, 0)
+
+    for v in graph.nodes:
+        if v != start:
+            prev[v] = None
+            dist[v] = float('inf')
+            Q.insert(v, float('inf'))
 
     graph_edges = [(u, v, d['weight']) for (u, v, d) in graph.edges(data=True)]
-    yield (sorted(S), sorted(V_S), graph_edges, copy.deepcopy(A))
+    explored = set()
+    yield (_snapshot(dist, prev, explored, graph_edges))
 
-    # Seed the heap with edges from the start node
-    for neighbor in graph.neighbors(start):
-        w = graph[start][neighbor]['weight']
-        pq.insert(item=(start, neighbor), value=A[start]['cost'] + w)
+    # The main loop
+    while Q.size() > 0:
+        el = Q.pop()
+        u = el.get("item")
 
-    while len(V_S) > 0:
+        explored.add(u)
 
-        # Pop the lowest cost edge, skipping stale entries
-        el = pq.pop()
-        u, v = el.get("item")
-        w = el.get("value")
+        for v in graph.neighbors(u):
+            alt = dist[u] + graph[u][v]['weight']
+            if alt < dist[v]:
+                prev[v] = u
+                dist[v] = round(alt, 3)
+                Q.decrease_priority(v, dist[v])
 
-        # Orient the edge so new_node is the unexplored end
-        if u in S and v in S:
-            continue  # Both already explored, stale entry
-        new_node = v if v not in S else u
-        parent = u if new_node == v else v
+        yield (_snapshot(dist, prev, explored, graph_edges))
 
-        # Update cost list A
-        A[new_node]['parent'] = parent
-        A[new_node]['cost'] = round(w, 3)
 
-        # Move new_node from V_S to S
-        V_S.discard(new_node)
-        S.add(new_node)
-
-        # Add edges from the newly explored node to the heap
-        for neighbor in graph.neighbors(new_node):
-            if neighbor not in S:
-                edge_w = graph[new_node][neighbor]['weight']
-                pq.insert(item=(new_node, neighbor), value=A[new_node]['cost'] + edge_w)
-
-        yield (sorted(S), sorted(V_S), graph_edges, copy.deepcopy(A))
+def _snapshot(dist, prev, explored, graph_edges):
+    """Build a DijkstraSnapshot tuple from current algorithm state."""
+    all_nodes = list(dist.keys())
+    S = sorted(n for n in all_nodes if n in explored)
+    V_S = sorted(n for n in all_nodes if n not in explored)
+    A = {}
+    for node in all_nodes:
+        cost = dist[node]
+        A[node] = {"node": node, "cost": cost, "parent": prev[node]}
+    return (S, V_S, graph_edges, A)
     
 
 if __name__ == '__main__':
